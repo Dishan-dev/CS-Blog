@@ -100,7 +100,9 @@ body {
   margin: 0.08em 0.12em 0 0;
   color: var(--story-accent, #037ef3);
 }
-/* photos break out of the text column */
+/* photos break out of the text column, to the right only: the chapter rail
+   sits on the left, and from xl the grid keeps an empty 120px column on the
+   right (see BlogArticlePage) */
 .story-body img {
   display: block;
   width: 100%;
@@ -109,11 +111,10 @@ body {
   border-radius: 14px;
   box-shadow: 0 30px 60px -30px rgba(16, 33, 63, 0.55);
 }
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   .story-body img {
-    width: calc(100% + 160px);
+    width: calc(100% + 120px);
     max-width: none;
-    margin-left: -80px;
   }
 }
 .story-body iframe {
