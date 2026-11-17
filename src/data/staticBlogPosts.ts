@@ -1,13 +1,38 @@
 import { images } from '../assets/images'
 
+/*
+ * Sample stories used when Supabase is not configured.
+ * Content is written in the same shape the admin editor produces: <h2> chapters,
+ * <img> photos and <blockquote> quotes, so the story layout can be previewed locally.
+ */
+
+const img = (src: string, alt: string) => `<img src="${src}" alt="${alt}">`
+
 export const STATIC_BLOG_POSTS = [
   {
     id: '1',
     title: 'My 6 Weeks in Germany: A Global Volunteer Story That Changed My Life',
     excerpt:
       'I arrived in Berlin with just a suitcase and a heart full of nerves. Six weeks later, I left with friendships that span continents, skills I never expected, and a completely new perspective on what it means to contribute to the world.',
-    content:
-      '<p>I arrived in Berlin with just a suitcase and a heart full of nerves. Six weeks later, I left with friendships that span continents, skills I never expected, and a completely new perspective on what it means to contribute to the world.</p>',
+    content: [
+      '<p>I arrived in Berlin with just a suitcase and a heart full of nerves. I had practised the German word for "thank you" about a hundred times on the plane, and I still said it wrong to the first person who helped me with my bag.</p>',
+      '<p>Six weeks later, I left with friendships that span continents, skills I never expected, and a completely new perspective on what it means to contribute to the world.</p>',
+      '<h2>The first week: everything is new</h2>',
+      '<p>Our project was with a community centre that ran afternoon programmes for refugee children. There were eleven of us volunteers from nine countries, sharing two apartments and one very small kitchen.</p>',
+      img(
+        images.gallery.volunteer1,
+        'Volunteers from nine countries on the first day of the project',
+      ),
+      '<p>The first few days were a blur of train maps, grocery stores where I could not read a single label, and late-night conversations with people whose lives looked nothing like mine.</p>',
+      '<h2>Learning to teach without a shared language</h2>',
+      '<p>Most of the kids spoke Arabic, Dari or Ukrainian. Very few spoke English. I quickly learned that drawing, football and a lot of exaggerated facial expressions can carry a lesson further than words.</p>',
+      '<blockquote><p>The day a seven-year-old girl taught me to count to ten in Dari, I realised the classroom went both ways.</p></blockquote>',
+      img(images.gallery.teaching, 'An afternoon session at the community centre'),
+      '<p>By week three we had a routine: maths games at four, art at five, and a football match that nobody ever wanted to end.</p>',
+      '<h2>Coming home different</h2>',
+      '<p>Back in Colombo, I notice things I used to walk past. I listen more. I am slower to judge. And I have a WhatsApp group with people in eight time zones who still send each other good-morning messages.</p>',
+      '<p>If you are thinking about going on exchange and the only thing stopping you is fear, go anyway. The fear is the point.</p>',
+    ].join(''),
     category: 'Exchange Experiences',
     cover_image_url: images.blogGvGermany,
     author_name: 'Dilini Perera',
@@ -24,8 +49,15 @@ export const STATIC_BLOG_POSTS = [
     title: 'What AIESEC Taught Me About Leading Without Authority',
     excerpt:
       "Leadership isn't about a title — it's about influence, empathy, and the courage to act when no one is watching. Here's how two years in AIESEC reshaped my entire understanding of what it means to lead.",
-    content:
-      "<p>Leadership isn't about a title — it's about influence, empathy, and the courage to act when no one is watching.</p>",
+    content: [
+      "<p>Leadership isn't about a title. It's about influence, empathy, and the courage to act when no one is watching.</p>",
+      '<h2>The project nobody owned</h2>',
+      '<p>In my first year, our partnership drive had no clear owner. Everyone assumed someone else was handling it. I was not a team leader, but I started a spreadsheet, booked a room and asked five people to join me for one hour.</p>',
+      '<blockquote><p>Nobody gave me permission. I just stopped waiting for it.</p></blockquote>',
+      img(images.gallery.team, 'Our team after the partnership drive'),
+      '<h2>What actually works</h2>',
+      '<p>Listening first. Giving credit loudly and taking blame quietly. Making the next step small and obvious. None of it needs a title.</p>',
+    ].join(''),
     category: 'Leadership',
     cover_image_url: images.blogLeadingAuthority,
     author_name: 'Tharindu Silva',
@@ -42,8 +74,17 @@ export const STATIC_BLOG_POSTS = [
     title: 'Breaking Out of My Comfort Zone: The Exchange That Redefined Who I Am',
     excerpt:
       "I used to think I was too introverted for international experiences. Then I applied for AIESEC's Global Volunteer program almost on a whim — and spent 8 weeks in Costa Rica that fundamentally changed my relationship with discomfort.",
-    content:
+    content: [
       "<p>I used to think I was too introverted for international experiences. Then I applied for AIESEC's Global Volunteer program almost on a whim.</p>",
+      '<h2>Saying yes before I was ready</h2>',
+      '<p>I submitted the application at 1 a.m. and regretted it by breakfast. Three weeks later I had a visa appointment and a host family in a town I could not pronounce.</p>',
+      img(images.gallery.volunteer2, 'The town where I spent eight weeks'),
+      '<h2>Discomfort, every single day</h2>',
+      '<p>Ordering food. Asking for directions. Presenting to a room of local teachers in broken Spanish. Each one felt impossible, and each one got a little easier.</p>',
+      '<blockquote><p>Being an introvert did not stop me. It just meant I needed a quiet hour at the end of each loud day.</p></blockquote>',
+      '<h2>Who I came back as</h2>',
+      '<p>I still love my quiet evenings. But I no longer let "I am not that kind of person" make my decisions for me.</p>',
+    ].join(''),
     category: 'Personal Development',
     cover_image_url: images.blogComfortZone,
     author_name: 'Nimasha Fernando',
@@ -60,8 +101,15 @@ export const STATIC_BLOG_POSTS = [
     title: 'LEAD Summit 2026: Highlights From Our Biggest Event of the Year',
     excerpt:
       'Over 300 students. 18 speakers. Two days of workshops, panels, and collaborative projects. LEAD Summit 2026 was more than an event — it was a movement.',
-    content:
+    content: [
       '<p>Over 300 students. 18 speakers. Two days of workshops, panels, and collaborative projects.</p>',
+      '<h2>Day one: the big ideas</h2>',
+      '<p>The opening panel asked a simple question: what would you build if you knew you could not fail? The answers filled three whiteboards.</p>',
+      img(images.gallery.leadSummit, 'The main hall on day one of LEAD Summit'),
+      '<h2>Day two: getting hands-on</h2>',
+      '<p>Teams of six had four hours to design a project for a real local partner. Two of those projects are now running.</p>',
+      '<blockquote><p>I came for the certificate. I left with a team and a plan.</p></blockquote>',
+    ].join(''),
     category: 'Events & Announcements',
     cover_image_url: images.blogLeadSummit,
     author_name: 'Kaveen Jayawardena',
@@ -78,8 +126,15 @@ export const STATIC_BLOG_POSTS = [
     title: 'From Freshman to Team Leader: My Unexpected Journey With AIESEC CS',
     excerpt:
       "I joined AIESEC in my first week of university because a senior told me to. I had no idea what I was signing up for. Two years and four roles later, I'm leading a team of 12.",
-    content:
+    content: [
       '<p>I joined AIESEC in my first week of university because a senior told me to. I had no idea what I was signing up for.</p>',
+      '<h2>Year one: saying yes to everything</h2>',
+      '<p>I volunteered for every event, carried a lot of chairs, and learned how an organisation actually runs.</p>',
+      img(images.gallery.host, 'Setting up for my first AIESEC event'),
+      '<h2>Year two: leading twelve people</h2>',
+      '<p>The hardest part was not the work. It was learning that my job was now to help other people do theirs.</p>',
+      '<blockquote><p>Leading a team is mostly listening, then removing whatever is in their way.</p></blockquote>',
+    ].join(''),
     category: 'Member Stories',
     cover_image_url: images.blogFreshmanLeader,
     author_name: 'Isuri Wickramasinghe',
@@ -96,7 +151,17 @@ export const STATIC_BLOG_POSTS = [
     title: 'Teaching in Rural Nepal: How One Month Completely Changed My Worldview',
     excerpt:
       'When I landed in Kathmandu, I thought I was going there to make a difference. By the time I left, I understood that the students I was supposed to be teaching had given me far more than I could ever give them.',
-    content: '<p>When I landed in Kathmandu, I thought I was going there to make a difference.</p>',
+    content: [
+      '<p>When I landed in Kathmandu, I thought I was going there to make a difference.</p>',
+      '<h2>Six hours up the mountain</h2>',
+      '<p>The school was a bus ride and a two-hour walk from the nearest town. Forty students, three classrooms and one very determined headteacher.</p>',
+      img(images.gallery.volunteer3, 'The walk up to the school'),
+      '<h2>What they taught me</h2>',
+      '<p>They walked an hour each way to get to class, and arrived smiling. They shared lunch with whoever had forgotten theirs. They asked better questions than any lecture hall I had sat in.</p>',
+      '<blockquote><p>I went to teach English. I came back having learned patience, gratitude and how to laugh at myself.</p></blockquote>',
+      '<h2>Still in touch</h2>',
+      '<p>Every few months the headteacher sends photos. The library we started now has 300 books.</p>',
+    ].join(''),
     category: 'Global Impact',
     cover_image_url: images.blogNepalTeaching,
     author_name: 'Ravindu Bandara',
