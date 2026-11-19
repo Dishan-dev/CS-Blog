@@ -6,6 +6,9 @@ import { useBlogPosts } from '../hooks/useBlogPosts'
 import type { BlogPost } from '../lib/database.types'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { StoryViewer } from '../components/blog/StoryViewer'
+import { StoryGlobe } from '../components/blog/StoryGlobe'
+import { HomeJourney } from '../components/blog/HomeJourney'
+import { homeStories } from '../components/blog/destinations'
 import {
   STORY_CHAPTERS,
   categoryColor,
@@ -167,6 +170,8 @@ export function BlogPage() {
   const { posts: allPosts, loading } = useBlogPosts()
 
   const latest = useMemo(() => sortStories(allPosts), [allPosts])
+  const home = useMemo(() => homeStories(latest), [latest])
+  const reduced = useReducedMotion()
 
   const filtered = useMemo(() => {
     const q = searchTerm.trim().toLowerCase()
@@ -186,83 +191,96 @@ export function BlogPage() {
       <section className="relative overflow-hidden bg-[#10213f] px-6 pt-32 pb-14 text-white md:px-10 md:pt-36">
         <div className="pointer-events-none absolute -top-40 -right-40 size-[520px] rounded-full bg-[#037ef3]/25 blur-3xl" />
         <div className="relative mx-auto max-w-[1200px]">
-          <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+          <div className="grid grid-cols-[minmax(0,1fr)] items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,500px)] lg:gap-12">
             <div className="max-w-[640px]">
               <h1 className="font-display text-[44px] leading-[1.02] font-bold tracking-[-0.02em] sm:text-[60px]">
                 Stories from the people who went.
               </h1>
               <p className="mt-5 text-[17px] leading-[1.7] text-white/75">
-                Tap a face to watch a story in under a minute, or open one below and read it in
-                full.
+                Spin the globe to see where our members have been, tap a face to watch a story in
+                under a minute, or open one below and read it in full.
               </p>
-            </div>
-            <Link
-              to="/blog/submit"
-              className="flex shrink-0 items-center gap-2 self-start rounded-full bg-[#ffc845] px-6 py-3.5 text-[15px] font-semibold text-[#10213f] transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffc845] md:self-auto"
-            >
-              <PenLine size={17} />
-              Write your story
-            </Link>
-          </div>
-
-          <ul
-            className="-mx-6 mt-12 flex gap-5 overflow-x-auto px-6 pb-2 md:mx-0 md:px-0"
-            aria-label="Quick stories"
-          >
-            <li className="shrink-0">
               <Link
                 to="/blog/submit"
-                className="group flex w-[88px] flex-col items-center gap-2 focus-visible:outline-none"
+                className="mt-8 inline-flex shrink-0 items-center gap-2 rounded-full bg-[#ffc845] px-6 py-3.5 text-[15px] font-semibold text-[#10213f] transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffc845]"
               >
-                <span className="flex size-[84px] items-center justify-center rounded-full border-2 border-dashed border-white/50 text-white transition-colors group-hover:border-[#ffc845] group-hover:text-[#ffc845] group-focus-visible:border-[#ffc845]">
-                  <Plus size={28} />
-                </span>
-                <span className="text-[13px] text-white/80">Your story</span>
+                <PenLine size={17} />
+                Write your story
               </Link>
-            </li>
-            {(loading ? [] : latest).map((post, i) => (
-              <li key={post.id} className="shrink-0">
-                <button
-                  onClick={() => setViewerAt(i)}
-                  className="group flex w-[88px] flex-col items-center gap-2 focus-visible:outline-none"
-                  aria-label={`Watch ${post.author_name}'s story`}
-                >
-                  <span
-                    className="rounded-full p-[3px] transition-transform group-hover:scale-105 group-focus-visible:scale-105"
-                    style={{
-                      background: `conic-gradient(from 200deg, ${categoryColor(post.category)}, #037ef3, #ffc845, ${categoryColor(post.category)})`,
-                    }}
+
+              <ul
+                className="-mx-6 mt-10 flex gap-5 overflow-x-auto px-6 pb-2 md:mx-0 md:px-0"
+                aria-label="Quick stories"
+              >
+                <li className="shrink-0">
+                  <Link
+                    to="/blog/submit"
+                    className="group flex w-[88px] flex-col items-center gap-2 focus-visible:outline-none"
                   >
-                    <span className="block rounded-full border-[3px] border-[#10213f]">
-                      {post.author_avatar_url ? (
-                        <img
-                          src={post.author_avatar_url}
-                          alt=""
-                          className="size-[72px] rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="flex size-[72px] items-center justify-center rounded-full bg-white/10 text-[22px] font-bold">
-                          {post.author_name.charAt(0)}
-                        </span>
-                      )}
+                    <span className="flex size-[84px] items-center justify-center rounded-full border-2 border-dashed border-white/50 text-white transition-colors group-hover:border-[#ffc845] group-hover:text-[#ffc845] group-focus-visible:border-[#ffc845]">
+                      <Plus size={28} />
                     </span>
-                  </span>
-                  <span className="w-full truncate text-center text-[13px] text-white/90">
-                    {post.author_name.split(' ')[0]}
-                  </span>
-                </button>
-              </li>
-            ))}
-            {loading &&
-              [0, 1, 2, 3, 4].map((i) => (
-                <li
-                  key={i}
-                  className="size-[84px] shrink-0 animate-pulse rounded-full bg-white/10"
-                />
-              ))}
-          </ul>
+                    <span className="text-[13px] text-white/80">Your story</span>
+                  </Link>
+                </li>
+                {(loading ? [] : latest).map((post, i) => (
+                  <li key={post.id} className="shrink-0">
+                    <button
+                      onClick={() => setViewerAt(i)}
+                      className="group flex w-[88px] flex-col items-center gap-2 focus-visible:outline-none"
+                      aria-label={`Watch ${post.author_name}'s story`}
+                    >
+                      <span
+                        className="rounded-full p-[3px] transition-transform group-hover:scale-105 group-focus-visible:scale-105"
+                        style={{
+                          background: `conic-gradient(from 200deg, ${categoryColor(post.category)}, #037ef3, #ffc845, ${categoryColor(post.category)})`,
+                        }}
+                      >
+                        <span className="block rounded-full border-[3px] border-[#10213f]">
+                          {post.author_avatar_url ? (
+                            <img
+                              src={post.author_avatar_url}
+                              alt=""
+                              className="size-[72px] rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="flex size-[72px] items-center justify-center rounded-full bg-white/10 text-[22px] font-bold">
+                              {post.author_name.charAt(0)}
+                            </span>
+                          )}
+                        </span>
+                      </span>
+                      <span className="w-full truncate text-center text-[13px] text-white/90">
+                        {post.author_name.split(' ')[0]}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+                {loading &&
+                  [0, 1, 2, 3, 4].map((i) => (
+                    <li
+                      key={i}
+                      className="size-[84px] shrink-0 animate-pulse rounded-full bg-white/10"
+                    />
+                  ))}
+              </ul>
+            </div>
+            <StoryGlobe
+              posts={latest}
+              onOpen={(post) => setViewerAt(latest.findIndex((p) => p.id === post.id))}
+              homeCount={home.length}
+              onHome={() =>
+                document
+                  .getElementById('home-journey')
+                  ?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' })
+              }
+            />
+          </div>
         </div>
       </section>
+
+      {/* ══ AIESEC JOURNEYS AT HOME ══ */}
+      {!loading && home.length > 0 && <HomeJourney posts={home} />}
 
       {/* ══ FILTERS ══ */}
       <section className="border-b border-[#e1e9f5] bg-white">

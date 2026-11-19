@@ -22,7 +22,15 @@ import {
 } from 'lucide-react'
 import type { BlogPost } from '../../lib/database.types'
 import { useReducedMotion } from '../../hooks/useReducedMotion'
-import { categoryColor, formatStoryDate, shareStory, storyHighlights } from './storyUtils'
+import {
+  categoryColor,
+  formatStoryDate,
+  readReactions,
+  REACTION_KEY,
+  REACTIONS,
+  shareStory,
+  storyHighlights,
+} from './storyUtils'
 
 /* ─── Slides ─── */
 
@@ -54,18 +62,7 @@ function slideDuration(slide: Slide) {
   return 5500
 }
 
-const REACTIONS = ['❤️', '🔥', '👏', '😮', '🥹', '✈️']
-const REACTION_KEY = 'cs-story-reactions'
-
 type Particle = { id: number; emoji: string; x: number; y: number; drift: number; big?: boolean }
-
-function readReactions(): Record<string, string> {
-  try {
-    return JSON.parse(localStorage.getItem(REACTION_KEY) ?? '{}') as Record<string, string>
-  } catch {
-    return {}
-  }
-}
 
 /* ─── Word-by-word text ─── */
 
