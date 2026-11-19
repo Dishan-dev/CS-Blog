@@ -94,23 +94,38 @@ const slug = (s: string) =>
     .replace(/^-|-$/g, '')
     .slice(0, 48)
 
-/** Splits post HTML into an intro plus chapters, one per <h2>. */
+const escapeText = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+/** The heading level that marks chapters: H2 if the writer used any, else
+    H3 or H1 when used at least twice (the editor offers all three). */
+function chapterTag(root: Element): string | null {
+  const count = (tag: string) => root.querySelectorAll(`:scope > ${tag}`).length
+  if (count('h2') > 0) return 'H2'
+  if (count('h3') > 1) return 'H3'
+  if (count('h1') > 1) return 'H1'
+  return null
+}
+
+/** Splits post HTML into an intro plus chapters, one per chapter heading. */
 export function parseStory(html: string): { intro: string; chapters: StoryChapter[] } {
   if (typeof DOMParser === 'undefined' || !html.trim()) return { intro: html, chapters: [] }
   const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html')
   const root = doc.body.firstElementChild
   if (!root) return { intro: html, chapters: [] }
+  const tag = chapterTag(root)
 
   let intro = ''
   const chapters: StoryChapter[] = []
   for (const node of Array.from(root.childNodes)) {
     const el = node as Element
-    if (el.tagName === 'H2') {
+    if (tag && el.tagName === tag) {
       const title = el.textContent?.trim() || `Chapter ${chapters.length + 1}`
       chapters.push({ id: `ch-${chapters.length + 1}-${slug(title)}`, title, html: '' })
       continue
     }
-    const piece = el.outerHTML ?? node.textContent ?? ''
+    // text nodes are re-escaped: textContent is decoded, so "&lt;b&gt;" would become a real tag
+    const piece = el.outerHTML ?? escapeText(node.textContent ?? '')
     if (chapters.length) chapters[chapters.length - 1].html += piece
     else intro += piece
   }
@@ -126,4 +141,17 @@ export function storyHighlights(html: string) {
     .filter((p) => p.src)
   const quote = doc.querySelector('blockquote')?.textContent?.trim() || null
   return { photos, quote }
+}
+
+/* ─── Reactions, kept in this browser only ─── */
+
+export const REACTIONS = ['❤️', '🔥', '👏', '😮', '🥹', '✈️']
+export const REACTION_KEY = 'cs-story-reactions'
+
+export function readReactions(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(REACTION_KEY) ?? '{}') as Record<string, string>
+  } catch {
+    return {}
+  }
 }

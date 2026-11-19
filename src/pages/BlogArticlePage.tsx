@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, useScroll, useSpring, useTransform } from 'motion/react'
-import { ArrowLeft, ChevronDown, PenLine } from 'lucide-react'
+import { ArrowLeft, ChevronDown, PenLine, Plane } from 'lucide-react'
 import { useBlogPost, useBlogPosts } from '../hooks/useBlogPosts'
 import { enhanceBlogContentHtml } from '../lib/blogContent'
+import { sanitizePostHtml } from '../lib/sanitizeHtml'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { ShareButtons } from '../components/blog/ShareButtons'
+import { JourneyStory } from '../components/blog/JourneyStory'
 import {
   categoryColor,
   formatStoryDate,
   parseStory,
   sortStories,
+  type StoryChapter,
 } from '../components/blog/storyUtils'
 import type { BlogPost } from '../lib/database.types'
 
@@ -42,12 +45,24 @@ function MoreStoryCard({ post, label }: { post: BlogPost; label: string }) {
   )
 }
 
-export function BlogArticlePage() {
-  const { id } = useParams<{ id: string }>()
-  const { post, loading, error } = useBlogPost(id ?? '')
-  const { posts: allPosts } = useBlogPosts()
-  const reduced = useReducedMotion()
+interface ParsedStory {
+  intro: string
+  chapters: StoryChapter[]
+}
 
+/** The classic layout: cover, chapter rail and one column of text. */
+function PlainStory({
+  post,
+  story,
+  color,
+  onJourney,
+}: {
+  post: BlogPost
+  story: ParsedStory
+  color: string
+  onJourney: () => void
+}) {
+  const reduced = useReducedMotion()
   const { scrollYProgress } = useScroll()
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 28 })
 
@@ -59,35 +74,6 @@ export function BlogArticlePage() {
   const coverScale = useTransform(heroP, [0, 1], [1, 1.2])
   const titleY = useTransform(heroP, [0, 1], ['0%', '40%'])
   const titleOpacity = useTransform(heroP, [0, 0.7], [1, 0])
-
-  const content = post?.content
-  const story = useMemo(() => {
-    if (!content) return { intro: '', chapters: [] }
-    const html = enhanceBlogContentHtml(
-      content.replace(/^(\s*<h1[^>]*>[\s\S]*?<\/h1>\s*)/i, '').trimStart(),
-    )
-    return parseStory(html)
-  }, [content])
-
-  const { previous, next, related } = useMemo(() => {
-    const ordered = sortStories(allPosts)
-    const i = ordered.findIndex((p) => p.id === id)
-    const prevP = i >= 0 ? ordered[i + 1] : undefined
-    const nextP = i > 0 ? ordered[i - 1] : undefined
-    return {
-      previous: prevP,
-      next: nextP,
-      related: ordered
-        .filter(
-          (p) =>
-            p.id !== id &&
-            p.id !== prevP?.id &&
-            p.id !== nextP?.id &&
-            p.category === post?.category,
-        )
-        .slice(0, 1),
-    }
-  }, [allPosts, id, post?.category])
 
   // Which chapter is on screen, for the chapter rail
   const [active, setActive] = useState<string>('')
@@ -111,36 +97,10 @@ export function BlogArticlePage() {
       .getElementById(chapterId)
       ?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' })
 
-  if (loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="border-brand size-10 animate-spin rounded-full border-4 border-t-transparent" />
-      </div>
-    )
-  }
-
-  if (error || !post) {
-    return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 pt-24 text-center">
-        <p className="font-display text-[28px] font-bold text-[#10213f]">
-          We couldn't find this story
-        </p>
-        <p className="text-[15px] text-[#10213f]/70">It may have been moved or unpublished.</p>
-        <Link
-          to="/blog"
-          className="bg-brand mt-2 rounded-full px-6 py-3 text-[14px] font-semibold text-white"
-        >
-          Back to all stories
-        </Link>
-      </div>
-    )
-  }
-
-  const color = categoryColor(post.category)
   const activeIndex = story.chapters.findIndex((c) => c.id === active)
 
   return (
-    <div className="overflow-x-clip" style={{ ['--story-accent' as string]: color }}>
+    <>
       <motion.div
         className="fixed inset-x-0 top-0 z-[60] h-1 origin-left"
         style={{ scaleX: progress, background: color }}
@@ -171,6 +131,14 @@ export function BlogArticlePage() {
           <ArrowLeft size={15} />
           All stories
         </Link>
+        <button
+          type="button"
+          onClick={onJourney}
+          className="absolute top-28 right-6 z-10 flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-[13px] font-semibold text-white backdrop-blur transition-colors hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-white md:right-10"
+        >
+          <Plane size={15} className="rotate-45" />
+          Read as a journey
+        </button>
 
         <motion.div
           className="relative z-10 mx-auto w-full max-w-[1100px] px-6 pb-20 md:px-10"
@@ -340,20 +308,138 @@ export function BlogArticlePage() {
           </article>
         </div>
       </div>
+    </>
+  )
+}
+
+const VIEW_KEY = 'cs-story-view'
+
+export function BlogArticlePage() {
+  const { id } = useParams<{ id: string }>()
+  const { post, loading, error } = useBlogPost(id ?? '')
+  const { posts: allPosts } = useBlogPosts()
+  const [view, setView] = useState<'journey' | 'article'>(() => {
+    try {
+      return localStorage.getItem(VIEW_KEY) === 'article' ? 'article' : 'journey'
+    } catch {
+      return 'journey'
+    }
+  })
+  const changeView = (v: 'journey' | 'article') => {
+    setView(v)
+    try {
+      localStorage.setItem(VIEW_KEY, v)
+    } catch {
+      /* not saved: the choice lasts for this visit */
+    }
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }
+
+  const content = post?.content
+  const story = useMemo(() => {
+    if (!content) return { intro: '', chapters: [] }
+    const html = enhanceBlogContentHtml(
+      content.replace(/^(\s*<h1[^>]*>[\s\S]*?<\/h1>\s*)/i, '').trimStart(),
+    )
+    const { intro, chapters } = parseStory(html)
+    return {
+      intro: sanitizePostHtml(intro),
+      chapters: chapters.map((c) => ({ ...c, html: sanitizePostHtml(c.html) })),
+    }
+  }, [content])
+
+  const { previous, next, related } = useMemo(() => {
+    const ordered = sortStories(allPosts)
+    const i = ordered.findIndex((p) => p.id === id)
+    const prevP = i >= 0 ? ordered[i + 1] : undefined
+    const nextP = i > 0 ? ordered[i - 1] : undefined
+    return {
+      previous: prevP,
+      next: nextP,
+      related: ordered
+        .filter(
+          (p) =>
+            p.id !== id &&
+            p.id !== prevP?.id &&
+            p.id !== nextP?.id &&
+            p.category === post?.category,
+        )
+        .slice(0, 1),
+    }
+  }, [allPosts, id, post?.category])
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="border-brand size-10 animate-spin rounded-full border-4 border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (error || !post) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 pt-24 text-center">
+        <p className="font-display text-[28px] font-bold text-[#10213f]">
+          We couldn't find this story
+        </p>
+        <p className="text-[15px] text-[#10213f]/70">It may have been moved or unpublished.</p>
+        <Link
+          to="/blog"
+          className="bg-brand mt-2 rounded-full px-6 py-3 text-[14px] font-semibold text-white"
+        >
+          Back to all stories
+        </Link>
+      </div>
+    )
+  }
+
+  const color = categoryColor(post.category)
+  const journeyNext = next ?? previous
+  const more = [
+    next && { post: next, label: 'Newer story' },
+    previous && { post: previous, label: 'Older story' },
+    related[0] && { post: related[0], label: `More from ${post.category}` },
+  ].filter(
+    (m): m is { post: BlogPost; label: string } =>
+      !!m && (view === 'article' || m.post.id !== journeyNext?.id),
+  )
+
+  return (
+    <div className="overflow-x-clip" style={{ ['--story-accent' as string]: color }}>
+      {view === 'journey' ? (
+        <JourneyStory
+          post={post}
+          intro={story.intro}
+          chapters={story.chapters}
+          next={journeyNext}
+          onPlain={() => changeView('article')}
+        />
+      ) : (
+        <PlainStory
+          post={post}
+          story={story}
+          color={color}
+          onJourney={() => changeView('journey')}
+        />
+      )}
 
       {/* ══ MORE + WRITE ══ */}
       <section className="bg-[#f3f7fd] px-6 py-16 md:px-10 md:py-24">
         <div className="mx-auto max-w-[1100px]">
-          <h2 className="font-display text-[32px] leading-[1.1] font-bold text-[#10213f] md:text-[42px]">
-            Read another story
-          </h2>
-          <div className="mt-8 grid gap-5 md:grid-cols-2">
-            {next && <MoreStoryCard post={next} label="Newer story" />}
-            {previous && <MoreStoryCard post={previous} label="Older story" />}
-            {related[0] && <MoreStoryCard post={related[0]} label={`More from ${post.category}`} />}
+          {more.length > 0 && (
+            <h2 className="font-display mb-8 text-[32px] leading-[1.1] font-bold text-[#10213f] md:text-[42px]">
+              {view === 'journey' ? 'More journeys' : 'Read another story'}
+            </h2>
+          )}
+          <div className="grid gap-5 md:grid-cols-2">
+            {more.map((m) => (
+              <MoreStoryCard key={m.post.id} post={m.post} label={m.label} />
+            ))}
           </div>
 
-          <div className="mt-10 grid items-center gap-6 rounded-[14px] bg-[#10213f] p-8 text-white md:grid-cols-[1fr_auto] md:p-10">
+          <div
+            className={`${more.length ? 'mt-10' : ''} grid items-center gap-6 rounded-[14px] bg-[#10213f] p-8 text-white md:grid-cols-[1fr_auto] md:p-10`}
+          >
             <div>
               <p className="font-display text-[28px] leading-[1.15] font-semibold md:text-[32px]">
                 Got a moment like this of your own?
