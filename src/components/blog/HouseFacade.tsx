@@ -46,6 +46,114 @@ function scatter(n: number, seed: number) {
 const STARS = scatter(70, 7)
 const TOWERS = scatter(26, 3)
 
+// the words written across the evening sky
+const SKY_WORDS = ['Every', 'journey', 'leaves', 'a', 'story.']
+// little four-point glints around them: [left %, top %, size px, delay s]
+const SPARKLES = [
+  [8, 18, 16, 0.4],
+  [92, 8, 12, 1.6],
+  [20, 88, 10, 2.6],
+  [80, 80, 18, 3.3],
+  [50, -14, 11, 4.4],
+  [-2, 52, 9, 5.2],
+  [101, 46, 13, 2.1],
+] as const
+// shooting stars: [left %, top %, angle deg, duration s, delay s]
+const SHOOTING = [
+  [78, 4, 160, 9, 2.5],
+  [34, 2, 150, 13, 7],
+  [96, 14, 165, 11, 12],
+] as const
+
+function Glint({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className="block">
+      <path
+        d="M12 0 C12.8 8 16 11.2 24 12 C16 12.8 12.8 16 12 24 C11.2 16 8 12.8 0 12 C8 11.2 11.2 8 12 0Z"
+        fill="#fff6dc"
+      />
+    </svg>
+  )
+}
+
+/** The words in the sky: they condense out of starlight one by one, a glint
+    passes over them now and then, and stars shoot past behind them. Only
+    transforms, opacity and a small text shimmer animate, so walking in stays smooth. */
+function SkyWords({ layerRef }: { layerRef: React.Ref<HTMLDivElement> }) {
+  return (
+    <div
+      ref={layerRef}
+      // its bottom is pinned just above the roof when the scene is measured
+      className="absolute inset-x-0 flex origin-bottom justify-center px-6 will-change-[transform,opacity]"
+    >
+      {SHOOTING.map(([x, y, a, d, delay], i) => (
+        <span
+          key={i}
+          className="absolute h-0 w-0"
+          style={{ left: `${x}%`, top: `${y - 22}%`, transform: `rotate(${a}deg)` }}
+        >
+          <span
+            className="block h-[1.5px] w-[130px] rounded-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,.15)_40%,#fff)] opacity-0 shadow-[0_0_8px_rgba(255,255,255,.8)]"
+            style={{ animation: `hf-shoot ${d}s linear ${delay}s infinite` }}
+          />
+        </span>
+      ))}
+
+      <div
+        className="relative text-center"
+        style={{ animation: 'hf-float 7s ease-in-out 3s infinite' }}
+      >
+        {/* a soft pool of night behind the words, so they read against the dusk */}
+        <div className="absolute -inset-x-16 -inset-y-10 rounded-[50%] bg-[radial-gradient(closest-side,rgba(10,27,66,.5),transparent)]" />
+
+        <p
+          className="font-hand relative text-[24px] leading-none text-[#ffd59a] md:text-[32px]"
+          style={{ animation: 'hf-word 1.2s cubic-bezier(.2,.7,.2,1) .2s both' }}
+        >
+          Somewhere under these stars…
+        </p>
+        <p className="font-museum relative mt-2 text-[34px] leading-[1.02] font-medium tracking-[-0.01em] text-balance drop-shadow-[0_0_22px_rgba(255,214,150,.35)] sm:text-[44px] md:mt-3 md:text-[50px] lg:text-[54px] xl:text-[62px]">
+          {SKY_WORDS.map((w, i) => {
+            const last = i === SKY_WORDS.length - 1
+            return (
+              <span key={w}>
+                <span
+                  // the gradient only paints inside the box: pad it so descenders (j, y) and the italic overhang are not cut, without moving the layout
+                  className={`-mx-[0.08em] -my-[0.2em] inline-block bg-[length:300%_100%] bg-clip-text px-[0.08em] py-[0.2em] text-transparent ${last ? 'italic' : ''}`}
+                  style={{
+                    backgroundImage: last
+                      ? 'linear-gradient(100deg,#ffc845 0 40%,#fff6dc 50%,#ffc845 60% 100%)'
+                      : 'linear-gradient(100deg,#ffffff 0 40%,#ffe2a6 50%,#ffffff 60% 100%)',
+                    animation: `hf-word 1.1s cubic-bezier(.2,.7,.2,1) ${0.55 + i * 0.16}s both, hf-shimmer 7s ease-in-out ${2.4 + i * 0.12}s infinite`,
+                  }}
+                >
+                  {w}
+                </span>
+                {!last && ' '}
+              </span>
+            )
+          })}
+        </p>
+
+        {SPARKLES.map(([x, y, s, delay], i) => (
+          <span
+            key={i}
+            className="absolute"
+            style={{ left: `${x}%`, top: `${y}%`, marginLeft: -s / 2, marginTop: -s / 2 }}
+          >
+            <span
+              className="block opacity-0 drop-shadow-[0_0_6px_#ffe2a6]"
+              style={{ animation: `hf-sparkle 3.2s ease-in-out ${delay}s infinite` }}
+            >
+              <Glint size={s} />
+            </span>
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /** Light that switches on shortly after you arrive. */
 function LightsOn({ delay, children }: { delay: number; children: ReactNode }) {
   return <g style={{ animation: `hf-on 0.8s ease-out ${delay * 0.55}s both` }}>{children}</g>
@@ -206,6 +314,8 @@ export function HouseFacade({
   const leftRef = useRef<HTMLDivElement>(null)
   const rightRef = useRef<HTMLDivElement>(null)
   const hintRef = useRef<HTMLParagraphElement>(null)
+  const wordsRef = useRef<HTMLDivElement>(null)
+  const wordsFit = useRef(1)
   const hover = useRef(false)
   // where the doorway's centre is on screen, and how big one drawing unit is
   const frame = useRef({ cx: 0, cy: 0, k: 1 })
@@ -227,6 +337,16 @@ export function HouseFacade({
     const origin = `${frame.current.cx}px ${frame.current.cy}px`
     for (const r of [skyRef, palmsRef, interiorRef, leftRef, rightRef, houseRef, frontRef]) {
       if (r.current) r.current.style.transformOrigin = origin
+    }
+    // the words in the sky sit just above the roof (its top is at y 300 in the drawing)
+    const words = wordsRef.current
+    if (words) {
+      const roof = frame.current.cy - (CY - 300) * k
+      const bottom = roof - (w < 768 ? 16 : 26)
+      words.style.bottom = `${Math.round(h - bottom)}px`
+      // short screens: shrink them to fit below the menu and the list button at the top
+      const room = bottom - (w < 768 ? 120 : 96)
+      wordsFit.current = Math.max(0.6, Math.min(1, room / Math.max(1, words.offsetHeight)))
     }
   }
 
@@ -252,6 +372,14 @@ export function HouseFacade({
       }
     }
     if (hintRef.current) hintRef.current.style.opacity = String(1 - clamp(e / 0.08))
+    const words = wordsRef.current
+    if (words) {
+      // the words rise into the sky and fade as you start up the path
+      const t = clamp(e / 0.2)
+      words.style.opacity = String(1 - t)
+      words.style.transform = `translate3d(0, ${(-70 * t).toFixed(1)}px, 0) scale(${wordsFit.current.toFixed(3)})`
+      words.style.visibility = t >= 1 ? 'hidden' : 'visible'
+    }
     if (rootRef.current) {
       // once the doorway fills most of the view, the house dissolves into the corridor
       rootRef.current.style.opacity = String(1 - clamp((e - 0.7) / 0.24))
@@ -726,6 +854,8 @@ export function HouseFacade({
           <path d="M1640 1000 Q1630 870 1520 760 Q1530 890 1550 1000Z" fill="#163a24" />
         </g>
       </Plane>
+
+      <SkyWords layerRef={wordsRef} />
 
       <p
         ref={hintRef}

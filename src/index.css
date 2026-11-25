@@ -180,3 +180,50 @@ body {
     transform: translateX(120px);
   }
 }
+/* the words in the sky: each one condenses out of starlight, then a glint passes over them */
+@keyframes hf-word {
+  from {
+    opacity: 0;
+    filter: blur(14px);
+    transform: translateY(18px) scale(1.06);
+  }
+}
+@keyframes hf-shimmer {
+  0%,
+  72% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0% 0;
+  }
+}
+@keyframes hf-sparkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.2) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(90deg);
+  }
+}
+@keyframes hf-shoot {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  2% {
+    opacity: 1;
+  }
+  9%,
+  100% {
+    opacity: 0;
+    transform: translateX(560px);
+  }
+}
+@keyframes hf-float {
+  50% {
+    transform: translateY(-6px);
+  }
+}

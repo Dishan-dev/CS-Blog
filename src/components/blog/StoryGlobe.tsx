@@ -264,7 +264,8 @@ export function StoryGlobe({ posts, onOpen, homeCount = 0, onHome }: StoryGlobeP
   }
 
   return (
-    <div className="relative mx-auto w-full max-w-[520px]">
+    // isolate: the pins sort themselves by depth (z-index 100-300) inside the globe only, never above the site menu
+    <div className="relative isolate mx-auto w-full max-w-[520px]">
       {/* soft glow behind the globe */}
       <div className="pointer-events-none absolute inset-[8%] rounded-full bg-[#037ef3]/30 blur-3xl" />
 
