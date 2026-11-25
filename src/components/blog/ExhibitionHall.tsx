@@ -525,6 +525,7 @@ function Hall({
   const barRef = useRef<HTMLDivElement>(null)
   const uiRef = useRef<HTMLDivElement>(null)
   const topRef = useRef<HTMLDivElement>(null)
+  const titleRef = useRef<HTMLDivElement>(null)
   const chipsRef = useRef<HTMLDivElement>(null)
   const nodes = useRef<(HTMLDivElement | null)[]>([])
   const shown = useRef<(boolean | undefined)[]>([])
@@ -638,6 +639,8 @@ function Hall({
         top.style.opacity = String(1 - k)
         top.style.visibility = k < 1 ? 'visible' : 'hidden'
       }
+      // outside, the words in the sky are the title; the card takes over once you are inside
+      if (titleRef.current && !lite) titleRef.current.style.opacity = String(k)
     },
     [entryShare, lite],
   )
@@ -1033,7 +1036,10 @@ function Hall({
           className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 px-4 pt-24 transition-opacity duration-300 md:gap-6 md:px-10 md:pt-28"
         >
           {/* phones: the house's own sign names it, so the card is for screen readers only */}
-          <div className="rounded-[14px] bg-[#0b1a33]/80 px-4 py-2.5 shadow-[0_14px_30px_-16px_rgba(0,0,0,.8)] ring-1 ring-white/10 backdrop-blur-md max-md:sr-only">
+          <div
+            ref={titleRef}
+            className="rounded-[14px] bg-[#0b1a33]/80 px-4 py-2.5 shadow-[0_14px_30px_-16px_rgba(0,0,0,.8)] ring-1 ring-white/10 backdrop-blur-md transition-opacity duration-300 max-md:sr-only"
+          >
             <p className="text-[10px] font-bold tracking-[0.24em] text-[#7cc0ff] uppercase md:text-[11px] md:tracking-[0.28em]">
               AIESEC in Colombo South
             </p>
