@@ -25,7 +25,7 @@ const RC = 1800 // radius the camera walks along
 const LOOK = 860 // arc length between the camera and the frame it looks at
 const YAW = (38 * Math.PI) / 180 // how far right of "straight ahead" the camera looks
 const SPACING = 600 // between two frames
-const GROUP_GAP = 560 // extra space before the next topic
+const GROUP_GAP = 900 // extra space before the next room, for its title wall
 const SEG = 260 // width of one wall panel
 const FLOOR_Y = 520 // floor, measured down from eye level
 const WALL_TOP = -760 // ceiling
@@ -70,6 +70,15 @@ type Piece =
   | { kind: 'pool'; key: string; s: number; color: string }
   | { kind: 'frame'; key: string; s: number; post: BlogPost; number: number; mirror?: boolean }
   | { kind: 'empty'; key: string; s: number; mirror?: boolean }
+  | {
+      kind: 'title'
+      key: string
+      s: number
+      text: string
+      color: string
+      index: number
+      count: number
+    }
 
 type FramePieceData = Extract<Piece, { kind: 'frame' }>
 
@@ -107,10 +116,22 @@ function layoutHall(posts: BlogPost[], numbers: Map<string, number>, lite = fals
     ...lit('intro', LOOK, BLUE, lite),
   ]
   const stops: Stop[] = []
-  let s = LOOK + 820
+  let s = LOOK + 1500
   for (const g of groups) {
     const color = g.name === OTHER ? BLUE : categoryColor(g.name)
-    pieces.push({ kind: 'floor', key: `floor-${g.name}`, s: s - 140, text: g.name, color })
+    pieces.push(
+      { kind: 'floor', key: `floor-${g.name}`, s: s - 600, text: g.name, color },
+      {
+        kind: 'title',
+        key: `title-${g.name}`,
+        s: s - 600,
+        text: g.name,
+        color,
+        index: stops.length + 1,
+        count: g.posts.length,
+      },
+      ...lit(`title-${g.name}`, s - 600, color, lite),
+    )
     stops.push({ name: g.name, s, color })
     for (const post of g.posts) {
       const number = numbers.get(post.id) ?? 0
@@ -158,6 +179,8 @@ const radiusOf = (p: Piece) => {
       return RW - 210
     case 'intro':
       return RW - bulge(1200)
+    case 'title':
+      return RW - bulge(600)
     case 'lamp':
       return RW - 70
     case 'beam':
@@ -182,6 +205,8 @@ const sizeOf = (p: Piece): [number, number, number] => {
       return [620, 420, FLOOR_Y - 2]
     case 'intro':
       return [1200, 380, -120]
+    case 'title':
+      return [600, 560, -40]
     case 'lamp':
       return [72, 96, LAMP_Y]
     case 'beam':
@@ -239,14 +264,14 @@ const facing = (s: number): Cam => ({
 
 /* ─── Pieces ─── */
 
-/** A photo print floating off the wall: white border, the writer's signature underneath. */
+/** A framed print: slim black frame, deep white mat, the writer's signature on the mat. */
 function Polaroid({ post, number }: { post: BlogPost; number: number }) {
   return (
-    <span className="relative block w-[300px] rounded-[6px] bg-white p-[11px] shadow-[0_1px_2px_rgba(11,26,51,.12),0_46px_50px_-26px_rgba(11,26,51,.45),0_18px_24px_-14px_rgba(11,26,51,.25)] transition-[filter,transform,box-shadow] duration-300 group-hover:-translate-y-2 group-hover:shadow-[0_1px_2px_rgba(11,26,51,.12),0_60px_60px_-28px_rgba(11,26,51,.5),0_22px_30px_-14px_rgba(3,126,243,.25)]">
-      <span className="block px-[6px] pt-[6px]">
+    <span className="relative block w-[300px] bg-[linear-gradient(135deg,#2b2b2b,#0c0c0c_40%,#1c1c1c)] p-[7px] shadow-[0_0_0_1px_rgba(255,255,255,.06),0_50px_60px_-30px_rgba(0,0,0,.9),0_0_80px_-20px_rgba(255,214,150,.35)] transition-[filter,transform,box-shadow] duration-300 group-hover:-translate-y-2 group-hover:shadow-[0_0_0_1px_rgba(255,255,255,.1),0_60px_70px_-30px_rgba(0,0,0,.95),0_0_110px_-16px_rgba(255,214,150,.55)]">
+      <span className="block bg-[#fbfaf7] px-[10px] pt-[10px] shadow-[inset_0_2px_8px_rgba(0,0,0,.18)]">
         <span
           data-photo
-          className="relative block h-[278px] w-[266px] overflow-hidden rounded-[3px] bg-[#10213f]"
+          className="relative block h-[276px] w-[266px] overflow-hidden bg-[#10213f] shadow-[0_0_0_1px_rgba(0,0,0,.12)]"
         >
           {post.cover_image_url ? (
             <img
@@ -262,7 +287,7 @@ function Polaroid({ post, number }: { post: BlogPost; number: number }) {
           {/* the glass: a soft sheen from the spotlight above */}
           <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(160deg,rgba(255,255,255,.28)_0%,rgba(255,255,255,.06)_30%,transparent_45%)]" />
         </span>
-        <span className="flex h-[54px] items-center justify-between gap-2 px-1">
+        <span className="flex h-[52px] items-center justify-between gap-2 px-0.5">
           <span className="font-hand truncate text-[25px] leading-none text-[#0b1a33]">
             {post.author_name}
           </span>
@@ -283,7 +308,7 @@ function Alcove({ color }: { color?: string }) {
       className="absolute inset-0 transition-opacity duration-500"
       style={{
         backgroundImage:
-          'radial-gradient(ellipse 55% 42% at 50% 30%, rgba(255,255,255,1), rgba(255,255,255,.6) 45%, transparent 72%)',
+          'radial-gradient(ellipse 52% 44% at 50% 31%, rgba(255,226,176,.5), rgba(255,206,140,.16) 48%, transparent 72%)',
       }}
     >
       {color && (
@@ -327,7 +352,8 @@ function FramePiece({
         {/* the wall label: lifts when you point at the photo */}
         <span
           data-fade
-          className="mt-9 block w-[290px] rounded-[2px] bg-white px-4 py-3 text-left shadow-[0_1px_2px_rgba(11,26,51,.12),0_12px_18px_-10px_rgba(11,26,51,.35)] transition-[transform,opacity] duration-300 group-hover:-translate-y-2"
+          className="mt-10 block w-[300px] border-l-2 py-1 pl-4 text-left transition-[transform,opacity] duration-300 group-hover:-translate-y-2"
+          style={{ borderColor: color }}
         >
           <span
             className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.16em] uppercase"
@@ -336,10 +362,10 @@ function FramePiece({
             <span className="size-1.5 rounded-full" style={{ background: color }} />
             {post.category}
           </span>
-          <span className="font-museum mt-1 line-clamp-2 block text-[17px] leading-[1.2] font-semibold text-[#0b1a33]">
+          <span className="font-museum mt-1.5 line-clamp-2 block text-[19px] leading-[1.2] font-medium text-[#f4efe6]">
             {post.title}
           </span>
-          <span className="mt-1 block text-[12px] text-[#0b1a33]/55">
+          <span className="mt-1.5 block text-[12px] tracking-[0.04em] text-white/45">
             {formatStoryDate(post, 'long')}, {post.read_time} min read
           </span>
         </span>
@@ -366,13 +392,13 @@ function EmptyPiece({ onWrite }: { onWrite?: () => void }) {
       <span className="flex size-16 items-center justify-center rounded-full bg-[#037ef3] text-white shadow-[0_0_30px_rgba(3,126,243,.6)] transition-transform group-hover:scale-110">
         <Plus size={28} />
       </span>
-      <span className="font-hand text-[34px] leading-[1.05] text-[#0b1a33]">
+      <span className="font-hand text-[34px] leading-[1.05] text-[#f4efe6]">
         This frame is saved for your story.
       </span>
     </>
   )
   const cls =
-    'group absolute top-[150px] left-1/2 flex h-[372px] w-[300px] -translate-x-1/2 flex-col items-center justify-center gap-4 border-[3px] border-dashed border-[#037ef3]/50 bg-white/60 p-6 text-center transition-colors hover:border-[#037ef3]'
+    'group absolute top-[150px] left-1/2 flex h-[372px] w-[300px] -translate-x-1/2 flex-col items-center justify-center gap-4 border-2 border-dashed border-[#e6c98f]/60 bg-white/[.04] p-6 text-center transition-colors hover:border-[#e6c98f]'
   return (
     <>
       <Alcove color="#ffc845" />
@@ -393,7 +419,7 @@ function Lamp() {
     <span className="relative block size-full">
       <span className="absolute top-0 left-1/2 h-[26px] w-[6px] -translate-x-1/2 bg-[#06101f]" />
       <span className="absolute top-[22px] left-1/2 h-[58px] w-[44px] -translate-x-1/2 rounded-[10px_10px_16px_16px] bg-[linear-gradient(90deg,#06101f,#22365a_45%,#0b1a33)] shadow-[0_6px_10px_rgba(0,0,0,.4)]" />
-      <span className="absolute top-[74px] left-1/2 h-[14px] w-[38px] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse,#ffffff,#d6ebff_45%,rgba(120,190,255,.0)_75%)] shadow-[0_0_24px_10px_rgba(200,228,255,.55)]" />
+      <span className="absolute top-[74px] left-1/2 h-[14px] w-[38px] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse,#ffffff,#ffe6bd_45%,rgba(255,200,120,0)_75%)] shadow-[0_0_26px_12px_rgba(255,214,150,.55)]" />
     </span>
   )
 }
@@ -403,7 +429,7 @@ function Beam() {
   return (
     <span className="block size-full blur-[8px]">
       <span
-        className="block size-full bg-[linear-gradient(rgba(220,236,255,.34),rgba(220,236,255,.1)_60%,transparent)]"
+        className="block size-full bg-[linear-gradient(rgba(255,226,176,.26),rgba(255,214,150,.08)_60%,transparent)]"
         style={{ clipPath: 'polygon(46% 0, 54% 0, 100% 100%, 0 100%)' }}
       />
     </span>
@@ -681,6 +707,7 @@ function Hall({
         flyIntoStory({
           from: photo ? photo.getBoundingClientRect() : new DOMRect(0, 0, 0, 0),
           src: frame.post.cover_image_url,
+          background: '#060d1b',
           go: () => navigate(`/blog/${frame.post.id}`),
         })
       },
@@ -710,9 +737,9 @@ function Hall({
           }
         }}
       >
-        {/* the far end of the corridor: bright haze, ceiling above, pale floor below */}
-        <div className="absolute inset-0 bg-[linear-gradient(#e3e9f1_0%,#eef2f7_40%,#f8fafc_49.6%,#e8dcc8_50.4%,#cfb790_100%)]" />
-        <div ref={whiteRef} className="absolute inset-0 bg-[#f5f7fb] opacity-0" />
+        {/* the far end of the corridor, lost in darkness */}
+        <div className="absolute inset-0 bg-[linear-gradient(#03070f_0%,#081226_42%,#122442_49.6%,#0c1424_50.4%,#05090f_100%)]" />
+        <div ref={whiteRef} className="absolute inset-0 bg-[#060d1b] opacity-0" />
 
         <div ref={worldRef} className="absolute top-1/2 left-1/2 size-0 transform-3d">
           {pieces.map((p, i) => {
@@ -736,18 +763,18 @@ function Hall({
                 }}
               >
                 {p.kind === 'wall' && (
-                  // warm white wall, a blue light line under the ceiling and along a pale skirting
-                  <div className="size-full bg-[linear-gradient(#037ef3_0%,#8cc8ff_0.4%,#e4e9f0_0.9%,#f3f5f8_8%,#fafbfc_45%,#f6f7f9_88%,#eceff3_95.2%,#dde3ea_95.5%,#d3dae3_98.7%,#7cc0ff_99.1%,#037ef3_100%)]" />
+                  // deep navy fluted panels, a brass rail above the skirting, blue light lines top and bottom
+                  <div className="size-full bg-[repeating-linear-gradient(90deg,rgba(255,255,255,.045)_0_1px,rgba(0,0,0,.16)_1px_3px,transparent_3px_22px),linear-gradient(#037ef3_0%,#5fb0ff_0.35%,#060c18_0.9%,#0c1830_9%,#11203b_50%,#0d1a31_92%,#0a1428_95%,#b8955a_95.15%,#f0d9a6_95.4%,#8f6f3d_95.65%,#080f1d_95.9%,#050a14_99.1%,#037ef3_100%)]" />
                 )}
                 {p.kind === 'planks' && (
-                  // light oak boards, lacquered: slightly see-through so the reflections below show
+                  // polished dark walnut: slightly see-through so the reflections below show
                   <div
-                    className="size-full bg-[repeating-linear-gradient(rgba(120,85,45,.13)_0_2px,transparent_2px_72px),linear-gradient(rgba(3,126,243,.45)_0%,rgba(214,190,152,.8)_1.4%,rgba(222,200,165,.8)_40%,rgba(205,178,138,.92)_100%)]"
+                    className="size-full bg-[repeating-linear-gradient(rgba(255,235,210,.035)_0_1px,transparent_1px_64px),linear-gradient(rgba(3,126,243,.5)_0%,rgba(42,30,22,.8)_1.4%,rgba(36,26,19,.78)_40%,rgba(18,13,10,.94)_100%)]"
                     style={{ clipPath: PLANK_CLIP }}
                   />
                 )}
                 {p.kind === 'ceiling' && (
-                  <div className="size-full bg-[linear-gradient(#e7ecf2_0%,#f1f4f7_25%,#ffffff_38%,#ffffff_56%,#eef2f6_66%,#f4f6f9_96.5%,#8cc8ff_99%,#037ef3_100%)]" />
+                  <div className="size-full bg-[linear-gradient(#03070e_0%,#070e1b_42%,#2a4a7a_46.5%,#e9f4ff_48.6%,#ffffff_49.4%,#e9f4ff_50.2%,#2a4a7a_52.3%,#070e1b_57%,#09121f_96.5%,#5fb0ff_99%,#037ef3_100%)]" />
                 )}
                 {p.kind === 'lamp' && <Lamp />}
                 {p.kind === 'beam' && <Beam />}
@@ -755,13 +782,13 @@ function Hall({
                   <div
                     className="size-full"
                     style={{
-                      background: `radial-gradient(ellipse 50% 60% at 50% 0%, rgba(220,236,255,.28), ${p.color}22 45%, transparent 72%)`,
+                      background: `radial-gradient(ellipse 50% 60% at 50% 0%, rgba(255,222,170,.22), ${p.color}26 45%, transparent 72%)`,
                     }}
                   />
                 )}
                 {p.kind === 'intro' && (
-                  <div className="flex size-full flex-col items-center justify-center text-center text-[#0b1a33]">
-                    <span className="text-[15px] font-bold tracking-[0.34em] text-[#037ef3] uppercase">
+                  <div className="flex size-full flex-col items-center justify-center text-center text-[#f4efe6]">
+                    <span className="text-[15px] font-bold tracking-[0.34em] text-[#e6c98f] uppercase">
                       The Story House · AIESEC in Colombo South
                     </span>
                     <span className="font-hand mt-4 text-[96px] leading-[0.95]">
@@ -772,17 +799,35 @@ function Hall({
                 {p.kind === 'floor' && (
                   // the wing's name, projected on the floor in its colour
                   <div className="flex size-full flex-col items-center justify-center text-center">
-                    <span className="text-[16px] font-semibold tracking-[0.4em] text-[#0b1a33]/40 uppercase">
+                    <span className="text-[16px] font-semibold tracking-[0.4em] text-white/35 uppercase">
                       Room
                     </span>
                     <span
                       className="font-museum text-[64px] leading-none font-semibold tracking-[0.04em] uppercase"
                       style={{
                         color: p.color,
-                        textShadow: `0 0 26px ${p.color}66`,
+                        textShadow: `0 0 18px ${p.color}, 0 0 44px ${p.color}88`,
+                        opacity: 0.85,
                       }}
                     >
                       {p.text}
+                    </span>
+                  </div>
+                )}
+                {p.kind === 'title' && (
+                  <div className="flex size-full flex-col items-start justify-center px-10 text-left text-[#f4efe6]">
+                    <span className="text-[15px] font-semibold tracking-[0.42em] text-[#e6c98f] uppercase">
+                      Room {String(p.index).padStart(2, '0')}
+                    </span>
+                    <span
+                      className="mt-6 block h-[2px] w-16"
+                      style={{ background: p.color, boxShadow: `0 0 18px ${p.color}` }}
+                    />
+                    <span className="font-museum mt-6 text-[66px] leading-[1.02] font-medium text-balance">
+                      {p.text}
+                    </span>
+                    <span className="mt-6 text-[17px] tracking-[0.08em] text-white/50">
+                      {p.count} {p.count === 1 ? 'story' : 'stories'} in this room
                     </span>
                   </div>
                 )}
@@ -814,7 +859,7 @@ function Hall({
         />
 
         {/* lens: darker corners and a little film grain */}
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_75%_at_50%_48%,transparent_60%,rgba(11,26,51,.28)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_75%_at_50%_48%,transparent_55%,rgba(0,0,0,.5)_100%)]" />
         <div
           className="pointer-events-none absolute inset-0 opacity-[.05] mix-blend-overlay"
           style={{
@@ -825,13 +870,13 @@ function Hall({
 
         {/* what is on screen, around the room */}
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 px-4 pt-24 md:gap-6 md:px-10 md:pt-28">
-          <div className="rounded-[14px] bg-white/88 px-4 py-2.5 shadow-[0_14px_30px_-16px_rgba(5,12,25,.7)] backdrop-blur-md">
-            <p className="text-[10px] font-bold tracking-[0.24em] text-[#037ef3] uppercase md:text-[11px] md:tracking-[0.28em]">
+          <div className="rounded-[14px] bg-[#0b1a33]/80 px-4 py-2.5 shadow-[0_14px_30px_-16px_rgba(0,0,0,.8)] ring-1 ring-white/10 backdrop-blur-md">
+            <p className="text-[10px] font-bold tracking-[0.24em] text-[#7cc0ff] uppercase md:text-[11px] md:tracking-[0.28em]">
               AIESEC in Colombo South
             </p>
             <h1
               id="hall-title"
-              className="font-display mt-0.5 text-[20px] leading-[1.05] font-bold tracking-[-0.01em] text-[#0b1a33] md:text-[26px] lg:text-[30px]"
+              className="font-display mt-0.5 text-[20px] leading-[1.05] font-bold tracking-[-0.01em] text-white md:text-[26px] lg:text-[30px]"
             >
               The Story House
             </h1>
@@ -839,7 +884,7 @@ function Hall({
           <button
             type="button"
             onClick={onList}
-            className="pointer-events-auto flex items-center gap-2 rounded-full border border-white/20 bg-white/88 px-4 py-2.5 text-[13px] font-semibold text-[#0b1a33] shadow-[0_8px_20px_-12px_rgba(5,12,25,.7)] backdrop-blur transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-[#037ef3]"
+            className="pointer-events-auto flex items-center gap-2 rounded-full border border-white/10 bg-[#0b1a33]/80 px-4 py-2.5 text-[13px] font-semibold text-white shadow-[0_8px_20px_-12px_rgba(0,0,0,.8)] backdrop-blur transition-colors hover:bg-[#0b1a33] focus-visible:outline-2 focus-visible:outline-[#037ef3]"
           >
             <List size={15} /> <span className="max-md:hidden">Show as list</span>
             <span className="md:hidden">List</span>

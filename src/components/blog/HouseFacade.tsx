@@ -12,9 +12,8 @@ import { useMotionValueEvent, type MotionValue } from 'motion/react'
    walk.
 
    The scene is built in depth layers (sky, skyline, palms, house, foreground
-   plants). Each layer moves at its own rate, both when the pointer moves and
-   when the camera walks in, so it feels like stepping forward rather than
-   zooming into a flat picture. */
+   plants). Each layer grows at its own rate as the camera walks in, so it
+   feels like stepping forward rather than zooming into a flat picture. */
 
 // the doorway, in the drawing's units (1600 x 1000)
 const DX = 740
@@ -29,12 +28,12 @@ const MAX_ZOOM = 15
 const clamp = (v: number) => Math.min(1, Math.max(0, v))
 const easeIn = (t: number) => t * t * t
 
-// [how fast it grows as you walk in, how far it shifts with the pointer]
+// how fast each layer grows as you walk in
 const DEPTH = {
-  sky: [0.08, 0.12],
-  palms: [0.45, 0.5],
-  house: [1, 1],
-  front: [1.45, 2],
+  sky: 0.08,
+  palms: 0.45,
+  house: 1,
+  front: 1.45,
 } as const
 type Layer = keyof typeof DEPTH
 
@@ -207,7 +206,6 @@ export function HouseFacade({
   const leftRef = useRef<HTMLDivElement>(null)
   const rightRef = useRef<HTMLDivElement>(null)
   const hintRef = useRef<HTMLParagraphElement>(null)
-  const pointer = useRef({ x: 0, y: 0, tx: 0, ty: 0 })
   const hover = useRef(false)
   // where the doorway's centre is on screen, and how big one drawing unit is
   const frame = useRef({ cx: 0, cy: 0, k: 1 })
@@ -233,27 +231,21 @@ export function HouseFacade({
   }
 
   const paint = (e: number) => {
-    const p = pointer.current
     const { k } = frame.current
     // doors part a little when you point at them, all the way as you walk up
     const open = Math.max(clamp((e - 0.06) / 0.26), hover.current ? 0.16 : 0)
     const walk = easeIn(clamp((e - 0.28) / 0.72))
     const z = Math.exp(Math.log(MAX_ZOOM) * walk)
-    const still = 1 - clamp(e / 0.2) // the pointer stops steering once you start walking
     const refs = { sky: skyRef, palms: palmsRef, house: houseRef, front: frontRef }
     for (const name of Object.keys(DEPTH) as Layer[]) {
-      const [grow, shift] = DEPTH[name]
       const el = refs[name].current
       if (!el) continue
-      const tx = p.x * shift * still * k
-      const ty = p.y * shift * still * k
-      el.style.transform = `translate3d(${tx.toFixed(1)}px, ${ty.toFixed(1)}px, 0) scale(${(z ** grow).toFixed(4)})`
+      const sc = z ** DEPTH[name]
+      el.style.transform = `scale(${sc.toFixed(4)})`
       if (name === 'house') {
         // the corridor and the doors travel with the house; the doors also slide apart
-        const sc = z ** grow
         const slide = (DW / 2) * open * k * sc
-        const at = (dx: number) =>
-          `translate3d(${(tx + dx).toFixed(1)}px, ${ty.toFixed(1)}px, 0) scale(${sc.toFixed(4)})`
+        const at = (dx: number) => `translate3d(${dx.toFixed(1)}px, 0, 0) scale(${sc.toFixed(4)})`
         if (interiorRef.current) interiorRef.current.style.transform = at(0)
         if (leftRef.current) leftRef.current.style.transform = at(-slide)
         if (rightRef.current) rightRef.current.style.transform = at(slide)
@@ -281,30 +273,6 @@ export function HouseFacade({
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   })
-
-  // the scene drifts gently with the pointer
-  useEffect(() => {
-    let raf = 0
-    const tick = () => {
-      const p = pointer.current
-      p.x += (p.tx - p.x) * 0.08
-      p.y += (p.ty - p.y) * 0.08
-      paint(progress.get())
-      raf =
-        Math.abs(p.tx - p.x) > 0.05 || Math.abs(p.ty - p.y) > 0.05 ? requestAnimationFrame(tick) : 0
-    }
-    const move = (ev: PointerEvent) => {
-      if (progress.get() >= 0.2 || ev.pointerType !== 'mouse') return
-      pointer.current.tx = (ev.clientX / window.innerWidth - 0.5) * -46
-      pointer.current.ty = (ev.clientY / window.innerHeight - 0.5) * -26
-      if (!raf) raf = requestAnimationFrame(tick)
-    }
-    window.addEventListener('pointermove', move)
-    return () => {
-      window.removeEventListener('pointermove', move)
-      cancelAnimationFrame(raf)
-    }
-  }, [progress])
 
   const setHover = (on: boolean) => {
     hover.current = on
@@ -339,11 +307,11 @@ export function HouseFacade({
             <stop offset=".8" stopColor="#fff3df" />
           </linearGradient>
           <linearGradient id="hf-hall" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#e9eef4" />
-            <stop offset=".2" stopColor="#fbfcfd" />
-            <stop offset=".78" stopColor="#f6f7f9" />
-            <stop offset=".8" stopColor="#e2cfb0" />
-            <stop offset="1" stopColor="#c8ad84" />
+            <stop offset="0" stopColor="#060c18" />
+            <stop offset=".25" stopColor="#13233f" />
+            <stop offset=".78" stopColor="#0e1a31" />
+            <stop offset=".8" stopColor="#3a2a1d" />
+            <stop offset="1" stopColor="#1a120c" />
           </linearGradient>
           <linearGradient id="hf-oak" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#c99a62" />
