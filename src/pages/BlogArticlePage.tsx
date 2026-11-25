@@ -126,10 +126,11 @@ function PlainStory({
 
         <Link
           to="/blog"
+          state={{ hall: true }}
           className="absolute top-28 left-6 z-10 flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-[13px] font-semibold text-white backdrop-blur transition-colors hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-white md:left-10"
         >
           <ArrowLeft size={15} />
-          All stories
+          Story House
         </Link>
         <button
           type="button"
@@ -387,7 +388,7 @@ export function BlogArticlePage() {
           to="/blog"
           className="bg-brand mt-2 rounded-full px-6 py-3 text-[14px] font-semibold text-white"
         >
-          Back to all stories
+          Back to the Story House
         </Link>
       </div>
     )
@@ -395,14 +396,21 @@ export function BlogArticlePage() {
 
   const color = categoryColor(post.category)
   const journeyNext = next ?? previous
-  const more = [
-    next && { post: next, label: 'Newer story' },
-    previous && { post: previous, label: 'Older story' },
-    related[0] && { post: related[0], label: `More from ${post.category}` },
-  ].filter(
-    (m): m is { post: BlogPost; label: string } =>
-      !!m && (view === 'article' || m.post.id !== journeyNext?.id),
-  )
+  // journey view: the other pages hanging in the same wing of the hall come first
+  const wingMates = allPosts
+    .filter((p) => p.id !== post.id && p.id !== journeyNext?.id && p.category === post.category)
+    .slice(0, 2)
+  const more =
+    view === 'journey' && wingMates.length > 0
+      ? wingMates.map((p) => ({ post: p, label: `More from ${post.category}` }))
+      : [
+          next && { post: next, label: 'Newer story' },
+          previous && { post: previous, label: 'Older story' },
+          related[0] && { post: related[0], label: `More from ${post.category}` },
+        ].filter(
+          (m): m is { post: BlogPost; label: string } =>
+            !!m && (view === 'article' || m.post.id !== journeyNext?.id),
+        )
 
   return (
     <div className="overflow-x-clip" style={{ ['--story-accent' as string]: color }}>
@@ -428,7 +436,11 @@ export function BlogArticlePage() {
         <div className="mx-auto max-w-[1100px]">
           {more.length > 0 && (
             <h2 className="font-display mb-8 text-[32px] leading-[1.1] font-bold text-[#10213f] md:text-[42px]">
-              {view === 'journey' ? 'More journeys' : 'Read another story'}
+              {view !== 'journey'
+                ? 'Read another story'
+                : wingMates.length > 0
+                  ? 'More pages from this chapter'
+                  : 'More journeys'}
             </h2>
           )}
           <div className="grid gap-5 md:grid-cols-2">

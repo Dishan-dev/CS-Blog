@@ -359,10 +359,11 @@ function Departure({
         <div className="absolute inset-x-6 top-28 z-20 flex items-center justify-between gap-3 md:inset-x-10">
           <Link
             to="/blog"
+            state={{ hall: true }}
             className="flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-[13px] font-semibold text-white backdrop-blur transition-colors hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-white"
           >
             <ArrowLeft size={15} />
-            All stories
+            Story House
           </Link>
           <button
             type="button"
